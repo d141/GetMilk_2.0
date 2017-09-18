@@ -15,9 +15,14 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -39,7 +44,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -52,12 +56,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        LatLng start = new LatLng(39,-98);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(start,3));
+        //Take input of zipcode from textbox
+        //Convert zipcode to latlng and zoom camera there
+        //TODO erase the first location marker if a second is created
 
-        // Add a marker in Sydney and move the camera
-
-      //  LatLng sydney = new LatLng(-34, 151);
-
-        EditText mZip = (EditText) findViewById(R.id.zipCode);
+        EditText mZip = findViewById(R.id.zipCode);
         mZip.setOnKeyListener(new View.OnKeyListener() {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER))
@@ -73,23 +78,41 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    
+
                     Address address = result.get(0);
                     double lat = address.getLatitude();
                     double lng = address.getLongitude();
                     LatLng latlng = new LatLng(lat,lng);
-                    mMap.addMarker(new MarkerOptions().position(latlng).title("Marker in Sydney"));
-                    mMap.moveCamera(CameraUpdateFactory.newLatLng(latlng));
+                    mMap.addMarker(new MarkerOptions().position(latlng).title("You are Here").icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_here)));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latlng,10));
                     return true;
                 }
                 return false;
             }
         });
 
+  //Read in locations from assets.locations.csv
+        try {
+            mMap = googleMap;
+            InputStreamReader stream = new InputStreamReader(getAssets().open("locations.csv"));
+            BufferedReader reader = new BufferedReader(stream);
+            String info;
+            while ((info = reader.readLine()) != null) {
+                String[] line = info.split(",");
 
-        //   Log.d("myTag", String.valueOf(lng));
+                Double latitude = Double.parseDouble(line[1]);
+                Double longitude = Double.parseDouble(line[2]);
+                String siteName = String.valueOf(line[0]);
+                LatLng location = new LatLng(latitude, longitude);
+                String snippet = String.valueOf(line[3]);
 
+                mMap.addMarker(new MarkerOptions().position(location).title(siteName).snippet(snippet).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_cow)));
+            }
+
+        }
+        catch (IOException e){
+            System.out.println("IOEXCEPTION");
+        }
     }
 
- //   AIzaSyBttzXL1JHacxSitcN38zMN8neKhVXR044
 }
